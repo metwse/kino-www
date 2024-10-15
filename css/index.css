@@ -6,7 +6,7 @@
 
 
 @keyframes initial-loading-animation { to { rotate: 360deg; } }
-#initial-load, #login {
+#initial-load, #login, #disable-mouse {
     display: flex; 
     position: absolute; inset: 0;
     background-color: var(--bg-1);
@@ -19,13 +19,21 @@
     }
 }
 
-#initial-load .loading-animation {
+#initial-load .loading-animation,
+#disable-mouse .loading-animation {
     width: 2em; height: 2em;
     border: .25em var(--fg-1) solid; border-radius: 100%;
     border-left-color: var(--bg-1); border-bottom-color: var(--bg-1);
     animation: .75s infinite linear initial-loading-animation;
 }
 
+#disable-mouse {
+    background-color: #0000; 
+    
+    .loading-animation {
+        font-size: 3em;
+    }
+}
 
 body {
     display: flex;

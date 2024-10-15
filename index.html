@@ -19,10 +19,14 @@
         <script src="/js/hander.js" type="module" defer></script>
         <script src="/js/kino.js" type="module" defer></script>
         <script src="/js/app.js" type="module" async defer></script>
+        <script src="/js/util.js" type="module" async defer></script>
 
         <script src="https://accounts.google.com/gsi/client" async defer></script>
     </head>
     <body>
+        <div id="disable-mouse" style="display: none;">
+            <div class="loading-animation"></div>
+        </div>
         <div id="login">
             <h1>Kino</h1>
             <div class="google-signin"></div>

@@ -1,0 +1,58 @@
+<script>
+    let user = await session.getUser(session.parsedToken.sub);
+</script>
+
+<div class="profile">
+    <img class="picture" src="https://cdn.metw.cc/assets/avatars/1">
+    <div>
+        <span class="name">Kino User</span>
+        <span class="username">@null</span>
+    </div>
+</div>
+<div class="logout">
+    <button onclick="session.logout()">logout</button> &nbsp; from kino
+<div>
+
+
+<style>
+    :host {
+        display: flex;
+        flex-direction: column; gap: 2em;
+    }
+
+    .profile {
+        display: flex;
+        align-items: center; justify-content: center; gap: 1em;
+
+        div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .picture {
+            width: 6em; height: 6em;
+            border-radius: 40%;
+        }
+
+        .name {
+            font-size: 2em;
+            grid-area: 0 / 0 / 2 / 1
+        }
+    }
+</style>
+
+<script>
+    let profile = root.querySelector(".profile");
+
+    profile.picture = profile.querySelector(".picture");
+    profile.name = profile.querySelector(".name");
+    profile.username = profile.querySelector(".username");
+
+    if (user.picture)
+        profile.picture.src = user.picture
+    if (user.username) 
+        profile.username.innerText = user.username
+    if (user.name) 
+        profile.name.innerText = user.name
+
+</script>
