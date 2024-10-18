@@ -53,6 +53,7 @@ main {
     padding: 2em; max-width: 600px;
     border-left: .06125em var(--bd-1) solid;
     flex-grow: 1;
+    overflow: hidden 
 }
 
 

@@ -14,27 +14,38 @@ class Extension {
 class Word extends Extension {
     static type = "word"
 
-    constructor(elem, word) {
+    constructor(elem, face) {
         super(elem);
-        this.word = word;
+        this.word = face.data;
+    }
+
+    init() {
+        this.elem.innerText = this.word.replaceAll("_", " ");
     }
 }
 
+//TODO
 class Note extends Extension {
     static type = "readonly"
 
-    constructor(elem, note) {
+    constructor(elem, face) {
         super(elem);
-        this.note = note;
+        this.note = face.data;
     }
 }
 
 class WN extends Extension {
     static type = "dictionary"
 
-    constructor(elem, data, word) {
+    constructor(elem, face, word) {
         super(elem)
-        this.word = data ?? word
+        this.word = face.data ?? word
+
+    }
+
+    async init() {
+        let data = await window.session.getWord("wn", this.word)
+        this.elem.innerText = data.lemma
     }
 }
 
@@ -44,7 +55,7 @@ window.extensions = {
     default: {
         Word,
         Note,
-        dictonaries: {
+        dictionaries: {
             WN
         }
     }

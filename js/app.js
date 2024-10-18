@@ -15,6 +15,7 @@ var pages = PAGES.map(page => fetch(`/pages/${page}.html`).then(r => r.text()));
 
 // Default CSS for shadow roots.
 var defaultCss = fetch(`/css/default.css`).then(r => r.text())
+var defaultElementsCss = fetch(`/css/elements.css`).then(r => r.text())
 
 
 // Loads HTML into <main>
@@ -35,7 +36,7 @@ async function parse(pageData) {
     })
 
     var defaultCssElem = document.createElement("style");
-    defaultCssElem.innerHTML = defaultCss;
+    defaultCssElem.innerHTML = defaultCss + defaultElementsCss;
     root.appendChild(defaultCssElem);
 
     // Leak styles from <style global> elements.
@@ -50,6 +51,7 @@ async function parse(pageData) {
 app.init = async _ => {
     pages = await Promise.all(pages);
     defaultCss = await defaultCss;
+    defaultElementsCss = await defaultElementsCss;
     await app.page("home")
 }
 

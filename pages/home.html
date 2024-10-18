@@ -1,14 +1,40 @@
 <script>
     let home = await window.session.home();
+    let freeMode = false;
 
     function updateProgress(n, m) {
-        root.querySelector(".progress").innerHTML = `${n}/${m}`
+        root.querySelector(".progress").innerHTML = `${n}/${m}`;
+
+        if (home.done == home.total) 
+            root.querySelector(".done").style.display = "";
     }
 
-    updateProgress(home.done, home.total);
+    let deck = root.querySelector("kino-deck");
 
-    if (home.done == home.total) 
-        root.querySelector(".done").style.display = ""
+    deck.addCards(home.cards)
+    deck.next()
+
+    let startX = 0;
+    let movement = 0;
+    deck.addEventListener("touchstart", ({ changedTouches: [touch] }) => {
+        startX = touch.screenX;
+    });
+
+    deck.addEventListener("touchmove", async ({ changedTouches: [touch] }) => {
+        movement = touch.screenX - startX;
+        if (Math.abs(movement) > 10) {
+            if (movement > 0) movement -= 10;
+            else movement += 10;
+            deck.card.style.transform = `translateX(${movement}px)`
+            if (Math.abs(movement) >= 54) await deck.next(movement > 0, !freeMode)
+        }
+    });
+    deck.addEventListener("touchend", async _ => {
+        if (Math.abs(movement) < 54) deck.card.style.transform = `translateX(0)`
+        else await deck.next(movement > 0, !freeMode)
+    })
+
+    updateProgress(home.done, home.total);
 </script>
 
 <nav>

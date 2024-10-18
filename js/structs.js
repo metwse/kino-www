@@ -63,7 +63,28 @@ class Card extends APIBindings {
     }
 
     init() {
-        this.doneAt = new Date(this.doneAt)
+        this.doneAt = new Date(this.doneAt);
+    }
+
+    async move(up) {
+        this.doneAt = new Date();
+        let currentLevel = this.deck.level;
+        let nextDeck;
+        let prevDeck;
+        if (up) {
+            nextDeck = this.session.decks.find(deck => deck.level == currentLevel + 1);
+        } else {
+            prevDeck = this.session.decks.find(deck => deck.level == currentLevel - 1);
+        }
+        if (up) {
+            this.session.cards.find(card => card.id == this.id).deck = nextDeck;
+            if (nextDeck)
+                await this.session.request(`/cards/${this.id}/move?${nextDeck.id}`)
+            else 
+                await this.session.request(`/cards/${this.id}/delete`)
+        } else if (prevDeck) {
+            await this.session.request(`/cards/${this.id}/done`)
+        }
     }
 }
 

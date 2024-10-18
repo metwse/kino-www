@@ -135,8 +135,9 @@ class Session {
                                     let struct = window.structs
                                         [type.charAt(0).toUpperCase() + type.slice(1, -1)]
                                         .deserialize(rawStruct);
+                                    struct.session = this;
                                     if (struct.init)
-                                        struct.init()
+                                        struct.init();
                                     return struct
                                 }
                             )
