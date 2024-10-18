@@ -1,3 +1,16 @@
+<script>
+    let home = await window.session.home();
+
+    function updateProgress(n, m) {
+        root.querySelector(".progress").innerHTML = `${n}/${m}`
+    }
+
+    updateProgress(home.done, home.total);
+
+    if (home.done == home.total) 
+        root.querySelector(".done").style.display = ""
+</script>
+
 <nav>
     <span class="progress">n/m</span>
     <span class="deck-name">deck 1</span>
@@ -7,9 +20,7 @@
         <span>Recurring cards are done.</span>
         <button>practice freely</button>
     </div>
-    <kino-deck class="deck">
-        todo!()
-    </kino-deck>
+    <kino-deck class="deck"></kino-deck>
 </div>
 
 

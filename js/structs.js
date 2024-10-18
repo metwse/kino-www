@@ -1,5 +1,5 @@
 var fields = {
-    Deck: "id, owner_id, name, card_count, interval",
+    Deck: "id, owner_id, card_count, interval, level",
     Card: "id, owner_id, deck_id, front, back, done_at",
     Face: "id, owner_id, extension_id, data",
     Extension: "id, owner_id, name, data",
@@ -47,6 +47,10 @@ class Deck extends APIBindings {
     get foreinKeys() {
         return { }
     }
+
+    init() {
+        this.interval = this.interval.days * 24 + this.interval.microseconds / 36e8
+    }
 }
 
 class Card extends APIBindings {
@@ -55,8 +59,11 @@ class Card extends APIBindings {
             decks: [`deck:${this.deckId}`],
             faces: [`front:${this.front}`, ...this.back.map((face_id, i) => `back[${i}]:${face_id}`)],
         }
-        this.back = []
         return obj
+    }
+
+    init() {
+        this.doneAt = new Date(this.doneAt)
     }
 }
 

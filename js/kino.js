@@ -89,6 +89,16 @@ class Session {
         return user
     }
 
+    async getWord(database, word) {
+        return (await this.request(`/${database}/get?${word}`))[0]
+    }
+    async suggestWord(database, word) {
+        return (await this.request(`/${database}/suggest?${word}`))[0]
+    }
+    async suggestWordSearch(database, word) {
+        return (await this.request(`/${database}/suggest_search?${word}`))[0]
+    }
+
     async bulk(request) {
         var cache = this.cache.structs;
         var response = {}
@@ -99,7 +109,7 @@ class Session {
                 cache[type] = {}
             response[type] = []
 
-            apiRequest[type] = ids.filter(id => {
+            apiRequest[type] = Array.from(ids).filter(id => {
                 let cached = cache[type][id];
                 if (cached) {
                     response[type].push(cached)
@@ -121,10 +131,14 @@ class Session {
                             type, 
                             rawStructs
                             .map(
-                                rawStruct => 
-                                window.structs
-                                [type.charAt(0).toUpperCase() + type.slice(1, -1)]
-                                .deserialize(rawStruct)
+                                rawStruct => {
+                                    let struct = window.structs
+                                        [type.charAt(0).toUpperCase() + type.slice(1, -1)]
+                                        .deserialize(rawStruct);
+                                    if (struct.init)
+                                        struct.init()
+                                    return struct
+                                }
                             )
                         ]
                     else 
@@ -146,10 +160,10 @@ class Session {
             for (let struct of structs) {
                 for (let [keyType, keys] of Object.entries(struct.foreinKeys)) {
                     if (nextRequest[keyType] === undefined)
-                        nextRequest[keyType] = [];
+                        nextRequest[keyType] = new Set();
                     for (let key of keys) {
                         willRequest = true;
-                        nextRequest[keyType].push(+key.split(":")[1]);
+                        nextRequest[keyType].add(+key.split(":")[1]);
                     }
                 }
             }
@@ -166,7 +180,7 @@ class Session {
                     ([type, keys]) => {
                         for (let key of keys) {
                             let [path, id] = key.split(":");
-                            eval(`newKeys.${path} = cache["${type}"][${id}]`);
+                            newKeys[path] = cache[type][id]
                         }
                     }
                 )
@@ -184,12 +198,75 @@ class Session {
             response[type].push(...structs)
         }
 
+        const LIMITS = {
+            deck: 16,
+            card: 64,
+            face: 192,
+            extension: 8
+        };
+
+        nextRequest = {};
+        willRequest = false;
         for (let [type, ids] of Object.entries(request)) {
-            if (response[type].length != ids.length) {
-                return this.bulk(request)
+            let nextIds = Array.from(ids).splice(LIMITS[type])
+            if (nextIds.length > 0) {
+                nextRequest[type] = nextIds
             }
         }
+
+        var nextResponse = {}
+        if (willRequest)
+            nextResponse = this.bulk(nextRequest)
+        for (let [type, ids] of Object.entries(nextResponse)) 
+            response[type].push(...ids)
+
         return response
+    }
+
+    async home(free) {
+        if (!this.decks) {
+            let home = (await this.request("/home"))[0];
+
+            this.decks = (await this.bulk({
+                decks: home.decks,
+            })).decks;
+
+            //TODO: single struct get
+            this.cards = home.cards.map(([id, deckId, doneAt]) => {
+                return {
+                    id, 
+                    deck: this.decks.find(d => d.id == deckId), 
+                    doneAt: new Date(doneAt).getTime(),
+                    done() {
+                        return (new Date().getTime() - this.doneAt) / 36e5 < this.deck.interval
+                    }
+                }
+            });
+        }
+
+        let selected = [];
+        if (free) {
+            selected = new Set();
+            let tried = 0;
+            while (selected.size < this.cards.length && selected.size < 16 && tried < 32) {
+                selected.add(this.cards[Math.floor(Math.random() * this.cards.length)].id);
+                tried += 1
+            }
+            selected = Array.from(selected);
+        } else {
+            for (let card of this.cards) {
+                if (selected.length == 16) break
+                if (!card.done()) {
+                    selected.push(card.id)
+                }
+            }
+        }
+
+        return {
+            cards: (await this.bulk({ cards: selected })).cards, 
+            done: this.cards.filter(card => card.done()).length,
+            total: this.cards.length
+        }
     }
 }
 
