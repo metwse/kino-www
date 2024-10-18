@@ -18,9 +18,8 @@ var defaultCss = fetch(`/css/default.css`).then(r => r.text())
 
 
 // Loads HTML into <main>
-// TODO: do not insert html before initial scripts
 async function parse(pageData) {
-    const root = main.shadowRoot;
+    var root = document.createElement("div");
     root.innerHTML = pageData;
 
     // Runs <script> elements in async scope.
@@ -41,12 +40,17 @@ async function parse(pageData) {
 
     // Leak styles from <style global> elements.
     styleExtention.innerHTML = globalStyles;
+
+    // exchange content of shadowRoot with new root
+    main.shadowRoot.innerHTML = "";
+    Array.from(root.childNodes).forEach(c => main.shadowRoot.appendChild(c))
 }
 
 
 app.init = async _ => {
     pages = await Promise.all(pages);
     defaultCss = await defaultCss;
+    await app.page("home")
 }
 
 app.page = async name => {

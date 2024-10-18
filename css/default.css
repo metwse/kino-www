@@ -7,3 +7,5 @@ button {
 }
 
 button:hover { cursor: pointer }
+
+img { background-color: var(--bg-2) }

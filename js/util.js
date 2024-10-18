@@ -10,8 +10,8 @@ window.mouseControl = {
 }
 
 async function withLoading(promise) {
-    window.mouseControl = false;
+    window.mouseControl.active = false;
     await promise;
-    window.mouseControl = true;
+    window.mouseControl.active = true;
 }
 window.withLoading = withLoading;

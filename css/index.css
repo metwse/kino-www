@@ -19,6 +19,8 @@
     }
 }
 
+#login { z-index: 3; }
+
 #initial-load .loading-animation,
 #disable-mouse .loading-animation {
     width: 2em; height: 2em;
@@ -28,7 +30,8 @@
 }
 
 #disable-mouse {
-    background-color: #0000; 
+    background-color: #0000;
+    z-index: 2;
     
     .loading-animation {
         font-size: 3em;

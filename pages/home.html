@@ -1,3 +1,47 @@
-<script>
-    console.log("hello from async!")
-</script>
+<nav>
+    <span class="progress">n/m</span>
+    <span class="deck-name">deck 1</span>
+</nav>
+<div class="main">
+    <div class="done" style="display: none;">
+        <span>Recurring cards are done.</span>
+        <button>practice freely</button>
+    </div>
+    <kino-deck class="deck">
+        todo!()
+    </kino-deck>
+</div>
+
+
+<style>
+    :host {
+        display: flex;
+        padding: 0 !important;
+        flex-direction: column;
+    }
+
+    nav {
+        display: flex;
+        padding: 1em 2em 0;
+        justify-content: space-between;
+    }
+
+    .main { 
+        display: grid; 
+        padding: 1em;
+        flex-grow: 1; 
+    }
+
+    .main > * {
+        grid-area: 1 / 1 / 2 / 2
+    }
+
+    .done {
+        display: flex;
+        flex-direction: column;
+        justify-content: center; align-items: center;
+        gap: 1em;
+
+        span { font-size: 1.25em; }
+    }
+</style>

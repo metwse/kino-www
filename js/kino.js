@@ -5,7 +5,8 @@ class Session {
         this.eventHandlers = {};
         this.token = token ? token : false;
         this.cache = { 
-            users: {}
+            users: {},
+            structs: {},
         }
     }
 
@@ -41,7 +42,7 @@ class Session {
                     catch { }
                     switch (res.status) {
                         case 401: 
-                            this.emit("logout");
+                            this.logout();
                             break
                         case 429:
                             resolve(await new Promise(resolve2 => {
@@ -67,7 +68,7 @@ class Session {
 
     logout() {
         this.emit("logout");
-        this.token = this._user = false;
+        this.token = this._token = false;
     }
 
     async googleSignin(credential) {
@@ -86,6 +87,109 @@ class Session {
         var user = new User(data);
         [`id=${selector}`, `username=${selector}`].forEach(v => this.cache.users[v] = user);
         return user
+    }
+
+    async bulk(request) {
+        var cache = this.cache.structs;
+        var response = {}
+        var apiRequest = {}
+        var willRequest = false
+        for (let [type, ids] of Object.entries(request)) {
+            if (cache[type] === undefined)
+                cache[type] = {}
+            response[type] = []
+
+            apiRequest[type] = ids.filter(id => {
+                let cached = cache[type][id];
+                if (cached) {
+                    response[type].push(cached)
+                    return false
+                }
+                willRequest = true;
+                return true
+            })
+        }
+
+        if (willRequest) {
+            var apiResponse = 
+                Object.entries(
+                    (await this.request("/bulk", { json: apiRequest }))[0]
+                )
+                .map(([type, rawStructs]) => {
+                    if (Array.isArray(rawStructs))
+                        return [
+                            type, 
+                            rawStructs
+                            .map(
+                                rawStruct => 
+                                window.structs
+                                [type.charAt(0).toUpperCase() + type.slice(1, -1)]
+                                .deserialize(rawStruct)
+                            )
+                        ]
+                    else 
+                        return [type, []]
+                }
+                );
+            apiResponse = Object.fromEntries(apiResponse)
+        } else {
+            apiResponse = {}
+        }
+
+        // collect forein keys
+        var foreinKeys = {};
+        var nextRequest = {};
+        var willRequest = false;
+        for (let [type, structs] of Object.entries(apiResponse)) {
+            if (foreinKeys[type] === undefined)
+                foreinKeys[type] = [];
+            for (let struct of structs) {
+                for (let [keyType, keys] of Object.entries(struct.foreinKeys)) {
+                    if (nextRequest[keyType] === undefined)
+                        nextRequest[keyType] = [];
+                    for (let key of keys) {
+                        willRequest = true;
+                        nextRequest[keyType].push(+key.split(":")[1]);
+                    }
+                }
+            }
+        }
+        
+        if (willRequest)
+            foreinKeys = await this.bulk(nextRequest);
+        
+        // load forein keys
+        for (let [_, structs] of Object.entries(apiResponse)) {
+            for (let struct of structs) {
+                let newKeys = {}
+                Object.entries(struct.foreinKeys).map(
+                    ([type, keys]) => {
+                        for (let key of keys) {
+                            let [path, id] = key.split(":");
+                            eval(`newKeys.${path} = cache["${type}"][${id}]`);
+                        }
+                    }
+                )
+                struct.loadForeinKeys(newKeys);
+            }
+        }
+
+        for (let [type, structs] of Object.entries(apiResponse)) {
+            if (!cache[type])
+                cache[type] = []
+            for (let struct of structs)
+                cache[type][struct.id] = struct
+            if (!response[type])
+                response[type] = []
+            response[type].push(...structs)
+        }
+
+        for (let [type, ids] of Object.entries(request)) {
+            if (response[type].length != ids.length) {
+                return this.bulk(request)
+            }
+        }
+        return response
     }
 }
 
