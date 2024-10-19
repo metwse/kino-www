@@ -1,40 +1,102 @@
 <script>
-    let home = await window.session.home();
-    let freeMode = false;
+    const deck = root.querySelector("kino-deck");
+    const done = root.querySelector(".done");
 
-    function updateProgress(n, m) {
-        root.querySelector(".progress").innerHTML = `${n}/${m}`;
-
-        if (home.done == home.total) 
-            root.querySelector(".done").style.display = "";
-    }
-
-    let deck = root.querySelector("kino-deck");
+    var home = await window.session.home();
+    var freeMode = false;
+    var nextBusy = false
 
     deck.addCards(home.cards)
-    deck.next()
+    next()
 
-    let startX = 0;
-    let movement = 0;
-    deck.addEventListener("touchstart", ({ changedTouches: [touch] }) => {
+    const updateProgress = _ => {
+        root.querySelector(".progress").innerText = `${home.done}/${home.total}`;
+        let deckLevel = deck.card?.data?.deck?.level;
+        root.querySelector(".deck-name").innerText =
+            deckLevel !== undefined ? `deck ${deckLevel + 1}` : "all cards are done";
+
+        if (home.done == home.total && !freeMode)
+            done.style.display = "";
+    }
+
+    done.querySelector("button").onclick = async _ => {
+        freeMode = true;
+        home = await window.session.home(true);
+        deck.addCards(home.cards);
+        next();
+        done.style.display = "none";
+    }
+    
+    async function next(up) {
+        if (nextBusy) return 
+        nextBusy = true
+
+        if (deck.card)
+            deck.card.back.remove()
+
+        var moveResponse = await deck.next(up, !freeMode);
+
+        switch (moveResponse) {
+            case "moved":
+            case "kept":
+                home.done += 1;
+                break;
+            case "removed":
+                home.total -= 1;
+                break;
+        }
+
+        if (deck.cardCount == 1) {
+            home = await window.session.home(freeMode);
+            deck.addCards(home.cards);
+            nextBusy = false
+        }
+
+        await updateProgress()
+
+        nextBusy = false
+    }
+
+    var startX = 0;
+    var movement = 0;
+    deck.ontouchstart = ({ changedTouches: [touch] }) => {
         startX = touch.screenX;
-    });
+    }
 
-    deck.addEventListener("touchmove", async ({ changedTouches: [touch] }) => {
+    deck.ontouchmove = async ({ changedTouches: [touch] }) => {
         movement = touch.screenX - startX;
         if (Math.abs(movement) > 10) {
             if (movement > 0) movement -= 10;
             else movement += 10;
-            deck.card.style.transform = `translateX(${movement}px)`
-            if (Math.abs(movement) >= 54) await deck.next(movement > 0, !freeMode)
+            if (deck.card)
+                deck.card.style.transform = `translateX(${movement}px)`
+            if (Math.abs(movement) >= 54) next(movement > 0)
         }
-    });
-    deck.addEventListener("touchend", async _ => {
-        if (Math.abs(movement) < 54) deck.card.style.transform = `translateX(0)`
-        else await deck.next(movement > 0, !freeMode)
-    })
+    }
 
-    updateProgress(home.done, home.total);
+    deck.ontouchend = async _ => {
+        if (Math.abs(movement) < 54) {
+            deck.card.style.transform = `translateX(0)`
+            setTimeout(_ => deck.card.flip(), 1)
+        }
+        else next(movement > 0)
+        movement = 0
+    }
+
+    window.onkeydown = async ({ key }) => {
+        if (["ArrowRight", "d"].includes(key)) {
+            next(true)
+        }
+        if (["ArrowLeft", "a"].includes(key)) {
+            next(false)
+        }
+    }
+
+    if (window.ontouchstart === undefined) {
+        deck.onclick = _ => {
+            setTimeout(_ => deck.card.flip(), 1)
+        }
+    }
 </script>
 
 <nav>
@@ -42,11 +104,11 @@
     <span class="deck-name">deck 1</span>
 </nav>
 <div class="main">
+    <kino-deck class="deck"></kino-deck>
     <div class="done" style="display: none;">
         <span>Recurring cards are done.</span>
         <button>practice freely</button>
     </div>
-    <kino-deck class="deck"></kino-deck>
 </div>
 
 
@@ -78,6 +140,7 @@
         flex-direction: column;
         justify-content: center; align-items: center;
         gap: 1em;
+        z-index: 2;
 
         span { font-size: 1.25em; }
     }

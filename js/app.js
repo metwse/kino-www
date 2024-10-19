@@ -20,7 +20,7 @@ var defaultElementsCss = fetch(`/css/elements.css`).then(r => r.text())
 
 // Loads HTML into <main>
 async function parse(pageData) {
-    var root = document.createElement("div");
+    window.root = document.createElement("div");
     root.innerHTML = pageData;
 
     // Runs <script> elements in async scope.
@@ -45,6 +45,7 @@ async function parse(pageData) {
     // exchange content of shadowRoot with new root
     main.shadowRoot.innerHTML = "";
     Array.from(root.childNodes).forEach(c => main.shadowRoot.appendChild(c))
+    root = main.shadowRoot
 }
 
 
@@ -52,7 +53,6 @@ app.init = async _ => {
     pages = await Promise.all(pages);
     defaultCss = await defaultCss;
     defaultElementsCss = await defaultElementsCss;
-    await app.page("home")
 }
 
 app.page = async name => {

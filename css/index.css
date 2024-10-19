@@ -40,7 +40,7 @@
 
 body {
     display: flex;
-    margin: auto; height: 100vh;
+    margin: auto; height: 100dvh;
     justify-content: center; flex-direction: row;
     color: var(--fg-1); background-color: var(--bg-1);
     font-family: rubik, sans-serif;

@@ -11,8 +11,8 @@ onload = async _ => {
 
     session = new window.kino.Session(token);
 
-    const loginUi = d.getElementById("login")
-    if (token) { loginUi.style.display = "none"; }
+    const loginUi = d.getElementById("login");
+    if (token) loginUi.style.display = "none"; 
 
     // initializes&loads Google sign in button 
     window.google.accounts.id.initialize({
@@ -24,5 +24,6 @@ onload = async _ => {
     session.on("logout", window.handler.logout);
     
     await window.app.init();
+    if (token) await window.app.page("home")
     d.getElementById("initial-load").remove();
 };

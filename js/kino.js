@@ -4,9 +4,11 @@ class Session {
     constructor(token) {
         this.eventHandlers = {};
         this.token = token ? token : false;
+        this.cards = [];
         this.cache = { 
             users: {},
             structs: {},
+            dictionary: {}
         }
     }
 
@@ -78,6 +80,26 @@ class Session {
         return !!ok 
     }
 
+    async newCard(deck_id, front, back) {
+        let apiRequest = {
+            deck_id,
+            front,
+            back
+        }
+
+        let [json, ok] = await this.request("/cards/new", { json: apiRequest })
+        if (!ok) return null
+
+        let data = await this.bulk({
+            cards: [json.card_id],
+            faces: [json.front, ...json.back]
+        });
+
+        var card = data.cards[0]
+        this.addCard(card.id, card.deckId, card.doneAt.getTime())
+        return card
+    }
+
     async getUser(selector) {
         var query = typeof selector == "number" ? `id=${selector}` : `username=${selector}`;
         if (this.cache.users[query]) return this.cache.users[query] // returns cached value if exists
@@ -90,7 +112,12 @@ class Session {
     }
 
     async getWord(database, word) {
-        return (await this.request(`/${database}/get?${word}`))[0]
+        if (!this.cache.dictionary[database])
+            this.cache.dictionary[database] = {}
+        let db = this.cache.dictionary[database];
+        if (db[word] !== undefined) return db[word]
+        let data = (await this.request(`/${database}/get?${word}`))[0]
+        return db[word] = data
     }
     async suggestWord(database, word) {
         return (await this.request(`/${database}/suggest?${word}`))[0]
@@ -151,6 +178,19 @@ class Session {
             apiResponse = {}
         }
 
+        function pushApiResponse() {
+            for (let [type, structs] of Object.entries(apiResponse)) {
+                if (!cache[type])
+                    cache[type] = []
+                for (let struct of structs)
+                    cache[type][struct.id] = struct
+                if (!response[type])
+                    response[type] = []
+                response[type].push(...structs)
+            }
+        }
+        pushApiResponse();
+
         // collect forein keys
         var foreinKeys = {};
         var nextRequest = {};
@@ -189,16 +229,6 @@ class Session {
             }
         }
 
-        for (let [type, structs] of Object.entries(apiResponse)) {
-            if (!cache[type])
-                cache[type] = []
-            for (let struct of structs)
-                cache[type][struct.id] = struct
-            if (!response[type])
-                response[type] = []
-            response[type].push(...structs)
-        }
-
         const LIMITS = {
             deck: 16,
             card: 64,
@@ -224,32 +254,38 @@ class Session {
         return response
     }
 
+    addCard(id, deckId, doneAt) {
+        this.cards.push({
+            id, 
+            //TODO: single struct get
+            deck: this.decks.find(d => d.id == deckId), 
+            doneAt: new Date(doneAt).getTime(),
+            done() {
+                return (new Date().getTime() - this.doneAt) / 36e5 < this.deck.interval
+            }
+        })
+    }
+
     async home(free) {
-        if (!this.decks) {
+        if (this.decks == undefined) {
             let home = (await this.request("/home"))[0];
 
             this.decks = (await this.bulk({
                 decks: home.decks,
             })).decks;
 
-            //TODO: single struct get
-            this.cards = home.cards.map(([id, deckId, doneAt]) => {
-                return {
-                    id, 
-                    deck: this.decks.find(d => d.id == deckId), 
-                    doneAt: new Date(doneAt).getTime(),
-                    done() {
-                        return (new Date().getTime() - this.doneAt) / 36e5 < this.deck.interval
-                    }
-                }
-            });
+            home.cards.forEach(([id, deckId, doneAt]) => this.addCard(id, deckId, doneAt));
         }
 
         let selected = [];
         if (free) {
             selected = new Set();
             let tried = 0;
-            while (selected.size < this.cards.length && selected.size < 16 && tried < 32) {
+            while (
+                selected.size < this.cards.length &&
+                selected.size < 16 &&
+                tried < 32
+            ) {
                 selected.add(this.cards[Math.floor(Math.random() * this.cards.length)].id);
                 tried += 1
             }
@@ -257,9 +293,7 @@ class Session {
         } else {
             for (let card of this.cards) {
                 if (selected.length == 16) break
-                if (!card.done()) {
-                    selected.push(card.id)
-                }
+                if (!card.done()) selected.push(card.id)
             }
         }
 

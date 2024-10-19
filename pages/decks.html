@@ -1,1 +1,63 @@
-todo!()
+<script>
+    let input = root.querySelector("input");
+    let suggestions = root.querySelector(".suggestions");
+    let add = root.querySelector("button.add");
+    //let view = root.querySelector("button.view");
+    let form = root.querySelector("form")
+
+    let last = 0;
+    let word = false;
+    input.oninput = _ => {
+        let id = Math.random();
+        last = id;
+        setTimeout(async _ => {
+            if (last != id) return;
+            if (input.value.length < 1) return
+            let words = await session.suggestWordSearch("wn", input.value);
+            suggestions.innerText = ""
+            word = words[0];
+            for (let word of words) {
+                let elem = document.createElement("div");
+                elem.innerText = word.replace("_", " ");
+                suggestions.appendChild(elem)
+            }
+        }, 200)
+    }
+
+    add.addEventListener("click", async e => {
+        if (word) {
+            e.preventDefault()
+            await session.newCard(session.decks[0].id, [0, word], [[2, null]])
+            input.value = ""
+            word = false;
+        }
+    })
+
+    form.onsubmit = add.onclick = async e => {
+        e.preventDefault()
+        if (!word) {
+            if (input.value.length < 2) return
+            let words = await session.suggestWord("wn", input.value);
+            suggestions.innerText = ""
+            for (let word of words) {
+                let elem = document.createElement("div");
+                elem.innerText = word.replace("_", " ");
+                suggestions.appendChild(elem)
+            }
+        }
+    }
+</script>
+
+<style>
+    .suggestions > * {
+        display: block
+    }
+</style>
+
+<form>
+    <input>
+    <button class="add">add</button>
+    <!--button class="view">view dictionary</button-->
+    <div class="suggestions">
+    </div>
+</form>

@@ -1,11 +1,15 @@
 .kino-back {
-    display: grid;
-    position: absolute; inset: 0;
-    width: 100vw; height: 100vh;
+    position: absolute;
+    width: 100dvw; height: 100dvh;
     justify-content: center; align-items: center;
+    background: var(--bg-1);
 
     kino-face {
+        display: flex;
+        padding: 1em;
+        position: absolute; inset: 0;
         grid-area: 0 / 0 / 1 / 1;
+        gap: 1em; flex-direction: column;
     }
 }
 
@@ -29,5 +33,41 @@ kino-card {
         font-size: 2em;
         max-width: 100%;
         overflow-wrap: break-word;
+    }
+}
+
+.kino-wn {
+    max-width: 480px;
+    margin: auto;
+    
+    h2 { margin: 0 2em; }
+
+    .meaning {
+        display: flex;
+        flex-direction: column;
+
+        .type-name { opacity: .5; }
+
+        & > div {
+            background: var(--bg-1);
+            padding: 2em .5em;
+
+            b { 
+                display: block;
+                margin: 0em 2em .5em; 
+            }
+
+            .synonyms {
+                display: flex;
+                flex-wrap: wrap;
+                margin: 0 .5em .5em;
+                gap: 0 1em;
+
+                i { font-style: italic }
+            }
+        }
+        & > div:nth-child(2n) {
+            background: var(--bg-2);
+        }
     }
 }

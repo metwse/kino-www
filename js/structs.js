@@ -67,23 +67,36 @@ class Card extends APIBindings {
     }
 
     async move(up) {
+        var currentLevel = this.deck.level;
+        var nextDeck, prevDeck;
+
+        if (up) nextDeck = this.session.decks.find(deck => deck.level == currentLevel + 1);
+        else prevDeck = this.session.decks.find(deck => deck.level == currentLevel - 1);
+
+        var cardIndex = this.session.cards.findIndex(card => card.id == this.id);
+        var indexedCard = this.session.cards[cardIndex];
+        indexedCard.doneAt = new Date().getTime();
         this.doneAt = new Date();
-        let currentLevel = this.deck.level;
-        let nextDeck;
-        let prevDeck;
+
         if (up) {
-            nextDeck = this.session.decks.find(deck => deck.level == currentLevel + 1);
+            if (nextDeck) {
+                this.deck = indexedCard.deck = nextDeck;
+                await this.session.request(`/cards/${this.id}/move?${nextDeck.id}`);
+                return "moved"
+            } else {
+                this.session.cards.splice(cardIndex, 1)[0];
+                await this.session.request(`/cards/${this.id}/delete`);
+                return "removed"
+            }
         } else {
-            prevDeck = this.session.decks.find(deck => deck.level == currentLevel - 1);
-        }
-        if (up) {
-            this.session.cards.find(card => card.id == this.id).deck = nextDeck;
-            if (nextDeck)
-                await this.session.request(`/cards/${this.id}/move?${nextDeck.id}`)
-            else 
-                await this.session.request(`/cards/${this.id}/delete`)
-        } else if (prevDeck) {
-            await this.session.request(`/cards/${this.id}/done`)
+            if (prevDeck) {
+                this.deck = indexedCard.deck = prevDeck;
+                await this.session.request(`/cards/${this.id}/move?${prevDeck.id}`);
+                return "moved"
+            } else {
+                await this.session.request(`/cards/${this.id}/done`);
+                return "kept"
+            }
         }
     }
 }

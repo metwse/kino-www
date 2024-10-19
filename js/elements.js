@@ -5,20 +5,31 @@ class KinoDeck extends HTMLElement {
     }
     
     addCards(cards) {
-        this.cards.push(...cards)
+        for (let card of cards) {
+            if (card != this.card?.data)
+                this.cards.push(card)
+        }
+    }
+
+    get cardCount() {
+        return this.cards.length + (this.card ? 1 : 0)
     }
 
     next(up, move) {
-        return new Promise(resolve => {
-            if (this.blocked) return resolve()
-            let timeout = 1;
-            this.blocked = true;
+        return new Promise(async resolve => {
+            if (this.blocked) return resolve("no-card");
+
+            var timeout = false;
+            var action = "no-card";
+            var card;
+
             if (this.card) {
-                timeout = 300
-                let targetX = window.screen.width * (up ? 1 : -1)
-                this.card.animate(
+                timeout = true;
+                let targetX = window.screen.width * (up ? 1 : -1);
+                card = this.card;
+                card.animate(
                     [
-                        { transform: `${this.card.style.transform}`},
+                       this.card.style.transform ? { transform: this.card.style.transform } : {},
                         { transform: `translateX(${targetX}px)`},
                     ],
                     {
@@ -27,19 +38,26 @@ class KinoDeck extends HTMLElement {
                         duration: 300
                     }
                 )
-                if (move)
-                    this.card.data.move(up)
+
+                if (move) action = await card.data.move(up)
+                else action = "free"
             } 
-            setTimeout(_ => {
+
+            var newCard = async _ => {
+                if (timeout) card.remove()
+                this.card = false;
+
+                let newCard = this.cards.pop();
                 this.blocked = false;
-                this.card = this.cards.pop();
-                if (this.card) {
-                    this.card = KinoCard.new(this.card);
-                    this.innerHTML = "";
+                if (newCard) {
+                    this.card = KinoCard.new(newCard);
                     this.appendChild(this.card);
-                    resolve()
                 }
-            }, timeout);
+                resolve(action)
+            };
+
+            if (!timeout) newCard()
+            else setTimeout(newCard, 300)
         })
     }
 }
@@ -65,11 +83,33 @@ class KinoCard extends HTMLElement {
         this.back = document.createElement("div")
         this.back.className = "kino-back";
         this.back.style.display = "none"
+
         
         for (let back of this.data.back) {
             let elem = document.createElement("kino-face");
             elem.load(back, this.sharedData);
             this.back.appendChild(elem);
+        }
+
+        this.back.onclick = _ => this.flipToFront()
+    }
+
+    flipToFront() {
+        let child = this.back.children[this.back.closeCounter]
+        if (child) {
+            child.style.display = "none"
+        }
+        if (this.back.closeCounter + 1 == this.back.children.length) {
+            this.back.style.display = "none"
+        }
+        this.back.closeCounter += 1
+    }
+
+    flip() {
+        this.back.style.display = ""
+        this.back.closeCounter = 0;
+        for (let elem of Array.from(this.back.children)) {
+            elem.style.display = ""
         }
     }
 

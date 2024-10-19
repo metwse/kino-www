@@ -4,6 +4,7 @@ async function googleSignin({ credential }) {
     if (await window.session.googleSignin(credential)) {
         localStorage.setItem("token", window.session.token);
         loginUi.style.display = "none";
+        window.app.page("home")
     } else {
         logout();
     }
