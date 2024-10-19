@@ -77,7 +77,6 @@
     deck.ontouchend = async _ => {
         if (Math.abs(movement) < 54) {
             deck.card.style.transform = `translateX(0)`
-            setTimeout(_ => deck.card.flip(), 1)
         }
         else next(movement > 0)
         movement = 0
@@ -92,10 +91,8 @@
         }
     }
 
-    if (window.ontouchstart === undefined) {
-        deck.onclick = _ => {
-            setTimeout(_ => deck.card.flip(), 1)
-        }
+    deck.onclick = _ => {
+        deck.card.flip()
     }
 </script>
 

@@ -12,7 +12,7 @@
         last = id;
         setTimeout(async _ => {
             if (last != id) return;
-            if (input.value.length < 1) return
+            if (input.value.length < 1) return word = false
             let words = await session.suggestWordSearch("wn", input.value);
             suggestions.innerText = ""
             word = words[0];
@@ -36,7 +36,7 @@
     form.onsubmit = add.onclick = async e => {
         e.preventDefault()
         if (!word) {
-            if (input.value.length < 2) return
+            if (input.value.length < 2) return word = false
             let words = await session.suggestWord("wn", input.value);
             suggestions.innerText = ""
             for (let word of words) {

@@ -90,8 +90,6 @@ class KinoCard extends HTMLElement {
             elem.load(back, this.sharedData);
             this.back.appendChild(elem);
         }
-
-        this.back.onclick = _ => this.flipToFront()
     }
 
     flipToFront() {
@@ -103,6 +101,7 @@ class KinoCard extends HTMLElement {
             this.back.style.display = "none"
         }
         this.back.closeCounter += 1
+        this.back.onclick = null
     }
 
     flip() {
@@ -111,6 +110,7 @@ class KinoCard extends HTMLElement {
         for (let elem of Array.from(this.back.children)) {
             elem.style.display = ""
         }
+        this.back.onclick = _ => this.flipToFront()
     }
 
     connectedCallback() {
