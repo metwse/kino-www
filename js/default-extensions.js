@@ -52,7 +52,7 @@ class WN extends Extension {
         `;
         let elem = this.elem.querySelector("div");
 
-        for (let type of ["noun", "verb", "adjective", "adverb"]) {
+        for (let type of ["noun", "verb", "adj", "adv"]) {
             let gloassary = data?.[type]
             if (gloassary && gloassary.length > 0) {
                 let typeElem = document.createElement("div");
@@ -71,7 +71,7 @@ class WN extends Extension {
                         for (let synonym of meaning.synonyms) {
                             if (synonym == lemma) continue
                             let i = document.createElement("i");
-                            i.innerText = synonym.replace("_", " ");
+                            i.innerText = synonym.replaceAll("_", " ");
                             synonyms.appendChild(i)
                         }
                     }
@@ -79,7 +79,7 @@ class WN extends Extension {
                         let examples = meaningElem.querySelector(".examples");
                         for (let example of meaning.examples) {
                             let span = document.createElement("span");
-                            span.innerText = example;
+                            span.innerText = `⎯ ${example}`;
                             examples.appendChild(span)
                         }
                     }

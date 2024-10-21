@@ -82,18 +82,12 @@
         movement = 0
     }
 
-    window.onkeydown = async ({ key }) => {
-        if (["ArrowRight", "d"].includes(key)) {
-            next(true)
-        }
-        if (["ArrowLeft", "a"].includes(key)) {
-            next(false)
-        }
-    }
+    window.app.addEventListener("keydown", async ({ key }) => {
+        if (["ArrowRight", "d"].includes(key)) next(true)
+        if (["ArrowLeft", "a"].includes(key)) next(false)
+    })
 
-    deck.onclick = _ => {
-        deck.card.flip()
-    }
+    deck.onclick = _ => deck.card.flip()
 </script>
 
 <nav>

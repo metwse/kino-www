@@ -17,11 +17,18 @@ var pages = PAGES.map(page => fetch(`/pages/${page}.html`).then(r => r.text()));
 var defaultCss = fetch(`/css/default.css`).then(r => r.text())
 var defaultElementsCss = fetch(`/css/elements.css`).then(r => r.text())
 
+// Global event listener that clear when new page loads
+var listeners = []
+
 
 // Loads HTML into <main>
 async function parse(pageData) {
     window.root = document.createElement("div");
     root.innerHTML = pageData;
+
+    for (let opt of listeners)
+        window.removeEventListener(...opt)
+    listeners = []
 
     // Runs <script> elements in async scope.
     const scripts = Array.from(root.querySelectorAll("script")).map(script => `${script.innerHTML}\n`).join(";\n");
@@ -53,6 +60,11 @@ app.init = async _ => {
     pages = await Promise.all(pages);
     defaultCss = await defaultCss;
     defaultElementsCss = await defaultElementsCss;
+}
+
+app.addEventListener = (...opt) => {
+    listeners.push(opt);
+    window.addEventListener(...opt);
 }
 
 app.page = async name => {

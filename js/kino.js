@@ -111,7 +111,11 @@ class Session {
         return user
     }
 
-    async getWord(database, word) {
+    async getWord(database, word2) {
+        var word;
+        if (database == "wn") word = word2.replaceAll("_", " ");
+        else word = word2;
+
         if (!this.cache.dictionary[database])
             this.cache.dictionary[database] = {}
         let db = this.cache.dictionary[database];
@@ -119,11 +123,23 @@ class Session {
         let data = (await this.request(`/${database}/get?${word}`))[0]
         return db[word] = data
     }
-    async suggestWord(database, word) {
-        return (await this.request(`/${database}/suggest?${word}`))[0]
+    async suggestWord(database, word2) {
+        var word;
+        if (database == "wn") word = word2.replaceAll("_", " ");
+        else word = word2;
+
+        let data = (await this.request(`/${database}/suggest?${word}`))[0]
+        if (database == "wn") data = data.map(d => d.replaceAll("_", " "))
+        return data
     }
-    async suggestWordSearch(database, word) {
-        return (await this.request(`/${database}/suggest_search?${word}`))[0]
+    async suggestWordSearch(database, word2) {
+        var word;
+        if (database == "wn") word = word2.replaceAll("_", " ");
+        else word = word2;
+
+        let data = (await this.request(`/${database}/suggest_search?${word}`))[0]
+        if (database == "wn") data = data.map(d => d.replaceAll("_", " "))
+        return data
     }
 
     async bulk(request) {

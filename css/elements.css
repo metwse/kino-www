@@ -36,6 +36,35 @@ kino-card {
     }
 }
 
+kino-search {
+    display: flex;
+    position: relative;
+    gap: 1em;
+
+    input { min-width: 0; flex-grow: 1; }
+
+    ul {
+        display: flex;
+        margin: 0; padding: .0625em;
+        position: absolute; top: calc(100% + 1em); left: 0; right: 0;
+        background-color: var(--bg-2);
+        flex-direction: column;
+        gap: .0625em;
+
+        li {
+            padding: .5em 1em;
+            list-style: none;
+            background-color: var(--bg-1);
+        }
+
+        li:hover { cursor: pointer }
+
+        li.highlighted { background: var(--bg-3)}
+    }
+    
+    ul:not(:has(li)) { display: none }
+}
+
 .kino-wn {
     max-width: 480px;
     margin: auto;
@@ -55,6 +84,7 @@ kino-card {
             b { 
                 display: block;
                 margin: 0em 2em .5em; 
+                text-indent: .5em;
             }
 
             .synonyms {
@@ -65,6 +95,8 @@ kino-card {
 
                 i { font-style: italic }
             }
+
+            .examples > * { display: block; }
         }
         & > div:nth-child(2n) {
             background: var(--bg-2);

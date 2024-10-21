@@ -136,9 +136,95 @@ class KinoFace extends HTMLElement {
     }
 }
 
+class KinoSearch extends HTMLElement {
+    constructor() {
+        super()
+    }
+
+    init(opt) {
+        this.api = {
+            suggest: opt.suggest,
+            suggestSearch: opt.suggestSearch
+        }
+
+        this.input = document.createElement("input");
+        this.button = document.createElement("button");
+        this.button.innerText = "add"
+        this.suggestions = document.createElement("ul");
+
+        this.appendChild(this.input);
+        this.appendChild(this.button);
+        this.appendChild(this.suggestions);
+
+        this.selectedIndex = -1;
+        this.suggestionList = [];
+
+        var random;
+        this.input.onkeydown = async e => {
+            if (e.key == "Enter") {
+                let word = (await this.api.suggestSearch(this.input.value))[this.selectedIndex == -1 ? 0 : this.selectedIndex]
+                if (word) this.emitword(word)
+                else
+                    this.setSuggestions(await this.api.suggest(this.input.value))
+                return
+            }
+            if (["ArrowUp", "ArrowDown"].includes(e.key)) {
+                e.preventDefault()
+                var elem = this.suggestionList[this.selectedIndex];
+                if (elem) elem.classList.remove("highlighted");
+
+                if (e.key == "ArrowDown") {
+                    if (this.selectedIndex < this.suggestionList.length - 1)
+                        this.selectedIndex++
+                    else
+                        this.selectedIndex = 0
+                } else if (this.selectedIndex > 0) {
+                    this.selectedIndex--
+                } else 
+                    this.selectedIndex = this.suggestionList.length - 1
+
+                elem = this.suggestionList[this.selectedIndex];
+                if (elem) elem.classList.add("highlighted");
+                
+                return
+            }
+
+            var thisRandom = random = Math.random()
+            setTimeout(async _ => {
+                if (!this.input.value.length) return this.suggestions.innerText = ""
+                if (random != thisRandom) return
+                this.selectedIndex = -1;
+                this.setSuggestions(await this.api.suggestSearch(this.input.value))
+            }, 100)
+        }
+    }
+
+    emitword(word) {
+        this.onword(word)
+        this.input.value = this.suggestions.innerText = ""
+    }
+
+    setSuggestions(words) {
+        this.suggestions.innerText = "";
+        this.suggestionList = [];
+        let first = true
+        for (let word of words) {
+            let li = document.createElement("li");
+            li.innerText = word;
+            this.suggestions.appendChild(li);
+            li.onclick = _ => this.emitword(word);
+            this.suggestionList.push(li);
+            if (first) {
+                first = false; li.classList.add("highlighted")
+            }
+        }
+    }
+}
+
 customElements.define("kino-deck", KinoDeck)
 customElements.define("kino-card", KinoCard)
 customElements.define("kino-face", KinoFace)
+customElements.define("kino-search", KinoSearch)
 
 window.kinoElements = {
     KinoDeck, 
