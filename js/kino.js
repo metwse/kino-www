@@ -113,7 +113,7 @@ class Session {
 
     async getWord(database, word2) {
         var word;
-        if (database == "wn") word = word2.replaceAll("_", " ");
+        if (database == "wn") word = word2.replaceAll(" ", "_");
         else word = word2;
 
         if (!this.cache.dictionary[database])
@@ -125,7 +125,7 @@ class Session {
     }
     async suggestWord(database, word2) {
         var word;
-        if (database == "wn") word = word2.replaceAll("_", " ");
+        if (database == "wn") word = word2.replaceAll(" ", "_");
         else word = word2;
 
         let data = (await this.request(`/${database}/suggest?${word}`))[0]
@@ -134,7 +134,7 @@ class Session {
     }
     async suggestWordSearch(database, word2) {
         var word;
-        if (database == "wn") word = word2.replaceAll("_", " ");
+        if (database == "wn") word = word2.replaceAll(" ", "_");
         else word = word2;
 
         let data = (await this.request(`/${database}/suggest_search?${word}`))[0]
@@ -282,17 +282,20 @@ class Session {
         })
     }
 
+    async init() {
+        let home = (await this.request("/home"))[0];
+
+        this.decks = (await this.bulk({ 
+            decks: home.decks 
+        })).decks;
+
+        home.cards.forEach(opts => this.addCard(...opts))
+    }
+
+    get cardCount() { return this.cards.length }
+    get cardsDone() { return this.cards.filter(card => card.done()).length }
+
     async home(free) {
-        if (this.decks == undefined) {
-            let home = (await this.request("/home"))[0];
-
-            this.decks = (await this.bulk({
-                decks: home.decks,
-            })).decks;
-
-            home.cards.forEach(([id, deckId, doneAt]) => this.addCard(id, deckId, doneAt));
-        }
-
         let selected = [];
         if (free) {
             selected = new Set();
@@ -313,11 +316,7 @@ class Session {
             }
         }
 
-        return {
-            cards: (await this.bulk({ cards: selected })).cards, 
-            done: this.cards.filter(card => card.done()).length,
-            total: this.cards.length
-        }
+        return (await this.bulk({ cards: selected })).cards
     }
 }
 

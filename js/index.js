@@ -23,7 +23,7 @@ onload = async _ => {
 
     session.on("logout", window.handler.logout);
     
-    await window.app.init();
+    await Promise.all([window.app.init(), window.session.init()]);
     if (token) await window.app.page("home")
     d.getElementById("initial-load").remove();
 };

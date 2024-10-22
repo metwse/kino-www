@@ -2,92 +2,43 @@
     const deck = root.querySelector("kino-deck");
     const done = root.querySelector(".done");
 
-    var home = await window.session.home();
-    var freeMode = false;
-    var nextBusy = false
+    var cards = await window.session.home();
+    deck.freeMode = false;
 
-    deck.addCards(home.cards)
-    next()
+    deck.addCards(cards);
+    deck.init();
 
     const updateProgress = _ => {
-        root.querySelector(".progress").innerText = `${home.done}/${home.total}`;
-        let deckLevel = deck.card?.data?.deck?.level;
+        let cardsDone = window.session.cardsDone;
+        let totalCards = window.session.cardCount;
+        root.querySelector(".progress").innerText = `${cardsDone}/${totalCards}`;
+        let deckLevel = deck.currentCard?.data?.deck?.level;
         root.querySelector(".deck-name").innerText =
             deckLevel !== undefined ? `deck ${deckLevel + 1}` : "all cards are done";
 
-        if (home.done == home.total && !freeMode)
+        if (cardsDone == totalCards && !deck.freeMode)
             done.style.display = "";
     }
 
     done.querySelector("button").onclick = async _ => {
-        freeMode = true;
-        home = await window.session.home(true);
-        deck.addCards(home.cards);
-        next();
+        deck.freeMode = true;
+        let home = await window.session.home(true);
+        deck.addCards(cards);
+        deck.init();
         done.style.display = "none";
     }
-    
-    async function next(up) {
-        if (nextBusy) return 
-        nextBusy = true
 
-        if (deck.card)
-            deck.card.back.remove()
-
-        var moveResponse = await deck.next(up, !freeMode);
-
-        switch (moveResponse) {
-            case "moved":
-            case "kept":
-                home.done += 1;
-                break;
-            case "removed":
-                home.total -= 1;
-                break;
+    deck.eventHandler = async ({ action, cardsLeft }) => {
+        if (cardsLeft < 2) {
+            var cards = (await window.session.home(deck.freeMode))
+                .filter(card => !deck.cards.find(loadedCard => card == loadedCard));
+            deck.addCards(cards);
         }
-
-        if (deck.cardCount == 1) {
-            home = await window.session.home(freeMode);
-            deck.addCards(home.cards);
-            nextBusy = false
-        }
-
-        await updateProgress()
-
-        nextBusy = false
+        deck.loadNextCard();
+        updateProgress();
     }
-
-    var startX = 0;
-    var movement = 0;
-    deck.ontouchstart = ({ changedTouches: [touch] }) => {
-        startX = touch.screenX;
-    }
-
-    deck.ontouchmove = async ({ changedTouches: [touch] }) => {
-        movement = touch.screenX - startX;
-        if (Math.abs(movement) > 10) {
-            if (movement > 0) movement -= 10;
-            else movement += 10;
-            if (deck.card)
-                deck.card.style.transform = `translateX(${movement}px)`
-            if (Math.abs(movement) >= 54) next(movement > 0)
-        }
-    }
-
-    deck.ontouchend = async _ => {
-        if (Math.abs(movement) < 54) {
-            deck.card.style.transform = `translateX(0)`
-        }
-        else next(movement > 0)
-        movement = 0
-    }
-
-    window.app.addEventListener("keydown", async ({ key }) => {
-        if (["ArrowRight", "d"].includes(key)) next(true)
-        if (["ArrowLeft", "a"].includes(key)) next(false)
-    })
-
-    deck.onclick = _ => deck.card.flip()
+    console.log(deck.currentCard);
+    updateProgress();
 </script>
 
 <nav>

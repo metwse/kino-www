@@ -1,13 +1,15 @@
 class KinoDeck extends HTMLElement {
     constructor() {
         super();
-        this.cards = []
+        this.cards = [];
+        this.cardElems = [];
     }
     
     addCards(cards) {
         for (let card of cards) {
-            if (card != this.card?.data)
+            if (card != this.card?.data) {
                 this.cards.push(card)
+            }
         }
     }
 
@@ -15,50 +17,151 @@ class KinoDeck extends HTMLElement {
         return this.cards.length + (this.card ? 1 : 0)
     }
 
-    next(up, move) {
-        return new Promise(async resolve => {
-            if (this.blocked) return resolve("no-card");
+    loadNextCard() {
+        let card = this.cards.pop();
+        if (card) {
+            let cardElem = KinoCard.new(card);
+            this.insertBefore(cardElem, this.children[0]);
+            cardElem.x = 0;
+            this.cardElems.push(cardElem);
+        }
+    }
 
-            var timeout = false;
-            var action = "no-card";
-            var card;
+    get currentCard() { return this.cardElems[0] }
 
-            if (this.card) {
-                timeout = true;
-                let targetX = window.screen.width * (up ? 1 : -1);
-                card = this.card;
-                card.animate(
-                    [
-                       this.card.style.transform ? { transform: this.card.style.transform } : {},
-                        { transform: `translateX(${targetX}px)`},
-                    ],
-                    {
-                        fill: "forwards",
-                        easing: "ease-in",
-                        duration: 300
-                    }
-                )
+    emit(action) {
+        if (this.eventHandler)
+            this.eventHandler({ action, cardsLeft: this.cardCount })
+    }
 
-                if (move) action = await card.data.move(up)
-                else action = "free"
-            } 
+    init() {
+        this.loadNextCard();
+        this.emit();
 
-            var newCard = async _ => {
-                if (timeout) card.remove()
-                this.card = false;
+        var startX;
+        var prevTimestamp;
+        this.ontouchstart = ({ timeStamp, targetTouches: [touch] }) => {
+            let card = this.currentCard;
+            if (!card) return
 
-                let newCard = this.cards.pop();
-                this.blocked = false;
-                if (newCard) {
-                    this.card = KinoCard.new(newCard);
-                    this.appendChild(this.card);
+            startX = touch.screenX;
+            prevTimestamp = timeStamp;
+
+            if (this.easeCenter) card.x = card.x / (2 ** this.easeCenterPow)
+
+            card.speed = card.acceleration = 0;
+            this.applyPhysics = this.easeCenter = false;
+
+            this.drag = { speed: 0 }
+        }
+
+        this.ontouchmove = ({ timeStamp, targetTouches: [touch] }) => {
+            let card = this.currentCard;
+            if (!card) return
+
+            var dx = touch.screenX - startX;
+            startX = touch.screenX;
+            var dt = timeStamp - prevTimestamp;
+            var speed = dx / dt * 1000;
+
+            card.x += dx
+            card.style.transform = `translateX(${card.x}px)`
+
+            this.drag = { dx, dt, speed };
+            this.applyPhysics = this.easeCenter = false;
+        }
+
+        this.ontouchend = () => {
+            let card = this.currentCard;
+            if (!card || !this.drag) return
+
+            var { speed } = this.drag
+
+            this.applyPhysics = true;
+            card.speed = speed
+        }
+        
+        this.onclick = () => { 
+            let card = this.currentCard;
+            if (card) card.flip()
+        }
+    }
+
+    physics(t) {
+        let card = this.currentCard;
+        if (this.physicsT && card && this.applyPhysics) {
+            let dt = (t - this.physicsT) / 1000;
+            card.x += card.speed * dt
+            card.speed += card.acceleration * dt;
+
+            let easeToCenter = () => {
+                if (!this.easeCenter) this.easeCenterPow = 0
+                this.easeCenter = true
+                card.speed = card.acceleration = 0;
+            }
+
+            if (!card.keyboardMove) {
+                if (Math.abs(card.speed) > card.offsetWidth / 2 || Math.abs(card.x) > card.offsetWidth / 2) {
+                    if (Math.sign(card.x) != Math.sign(card.speed)) easeToCenter()
+                    else card.acceleration = Math.sign(card.x) * card.offsetWidth * 10;
                 }
-                resolve(action)
-            };
+                else easeToCenter()
+            }
 
-            if (!timeout) newCard()
-            else setTimeout(newCard, 300)
+            if (this.easeCenter) {
+                this.easeCenterPow += 1 / (dt * 200)
+                if (Math.abs(card.x / (2 ** this.easeCenterPow)) < 1) {
+                    this.easeCenter = this.applyPhysics = false;
+                    this.easeCenterPow = card.x = 0
+                }
+            }
+            card.style.transform = `translateX(${this.easeCenter ? card.x / (2 ** this.easeCenterPow) : card.x}px)`
+        }
+        if (card) {
+            if (Math.abs(card.x) > card.offsetWidth / 2) {
+                card.style.opacity = 1.25 - Math.abs(this.easeCenter ? card.x / (2 ** this.easeCenterPow) : card.x) / card.offsetWidth / 2
+            } else { card.style.opacity = 1 }
+
+
+            if (Math.abs(card.x) > this.offsetWidth / 2 + card.offsetWidth) {
+                this.cardElems.shift();
+                card.remove();
+                if (!this.freeMode) card.data.move(card.x > 0);
+                this.emit();
+                this.applyPhysics = this.easeCenter = false;
+            }
+        }
+        
+        this.physicsT = t
+        requestAnimationFrame(t => { 
+            if (!this.disconnected) this.physics(t)
         })
+    }
+
+    connectedCallback() {
+        requestAnimationFrame(t => this.physics(t))
+
+        this.keyboardHander = ({ key }) => {
+            var card = this.cardElems[0];
+            if (!card) return
+
+            var up = ["d", "ArrowRight"].includes(key);
+            if (up || ["a", "ArrowLeft"].includes(key)) {
+                this.applyPhysics = true;
+                card.speed = card.x = 0;
+                card.acceleration = (up ? 1 : -1) * card.offsetWidth * 10;
+                card.keyboardMove = true;
+            }
+
+            if (["s", "ArrowDown"].includes(key)) card.flip()
+        }
+
+        window.addEventListener("keydown", this.keyboardHander)
+    }
+
+    disconnectedCallback() {
+        this.disconnected = true
+        window.removeEventListener("keydown", this.keyboardHander)
     }
 }
 
@@ -150,22 +253,26 @@ class KinoSearch extends HTMLElement {
         this.input = document.createElement("input");
         this.button = document.createElement("button");
         this.button.innerText = "add"
+        this.button.onclick = _ => this.input.onkeydown({ key: "Enter" });
         this.suggestions = document.createElement("ul");
 
         this.appendChild(this.input);
         this.appendChild(this.button);
         this.appendChild(this.suggestions);
 
-        this.selectedIndex = -1;
+        this.selectedIndex = 0;
         this.suggestionList = [];
 
         var random;
         this.input.onkeydown = async e => {
             if (e.key == "Enter") {
-                let word = (await this.api.suggestSearch(this.input.value))[this.selectedIndex == -1 ? 0 : this.selectedIndex]
+                let val = this.input.value.toLowerCase();
+                let word = (await this.api.suggestSearch(val))[this.selectedIndex] ?? this.suggestionList[this.selectedIndex]?.word
                 if (word) this.emitword(word)
-                else
-                    this.setSuggestions(await this.api.suggest(this.input.value))
+                else {
+                    this.setSuggestions(await this.api.suggest(val))
+                    this.selectedIndex = 0;
+                }
                 return
             }
             if (["ArrowUp", "ArrowDown"].includes(e.key)) {
@@ -189,12 +296,15 @@ class KinoSearch extends HTMLElement {
                 return
             }
 
+            if (e.key.startsWith("Arrow")) return
+
             var thisRandom = random = Math.random()
             setTimeout(async _ => {
-                if (!this.input.value.length) return this.suggestions.innerText = ""
+                var val = this.input.value.toLowerCase()
+                if (!val.length) return this.suggestions.innerText = ""
                 if (random != thisRandom) return
-                this.selectedIndex = -1;
-                this.setSuggestions(await this.api.suggestSearch(this.input.value))
+                this.selectedIndex = 0;
+                this.setSuggestions(await this.api.suggestSearch(val))
             }, 100)
         }
     }
@@ -213,6 +323,7 @@ class KinoSearch extends HTMLElement {
             li.innerText = word;
             this.suggestions.appendChild(li);
             li.onclick = _ => this.emitword(word);
+            li.word = word;
             this.suggestionList.push(li);
             if (first) {
                 first = false; li.classList.add("highlighted")

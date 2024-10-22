@@ -44,10 +44,10 @@ class WN extends Extension {
 
     async init() {
         let data = await window.session.getWord("wn", this.word);
-        let lemma = data?.lemma;
+        let lemma = data?.lemma ?? "word not found";
         this.elem.innerHTML = `
             <div class="kino-wn">
-                <h2>${lemma}</h2>
+                <h2>${lemma.replaceAll("_", " ")}</h2>
             </div>
         `;
         let elem = this.elem.querySelector("div");
