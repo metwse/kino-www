@@ -6,15 +6,26 @@ class KinoDeck extends HTMLElement {
     }
     
     addCards(cards) {
-        for (let card of cards) {
-            if (card != this.card?.data) {
-                this.cards.push(card)
-            }
+        for (let card of 
+            cards
+            .filter(card => 
+                !this.cardElems.find(cardElem => card == cardElem.data) && 
+                !this.cards.find(queuedCard => card == queuedCard)
+            ))
+            this.cards.push(card);
+
+        this.fillWithCards();
+    }
+
+    fillWithCards() {
+        while (this.children.length < 6) {
+            let added = this.loadNextCard();
+            if (!added) break
         }
     }
 
     get cardCount() {
-        return this.cards.length + (this.card ? 1 : 0)
+        return this.cards.length + this.cardElems.length
     }
 
     loadNextCard() {
@@ -23,8 +34,11 @@ class KinoDeck extends HTMLElement {
             let cardElem = KinoCard.new(card);
             this.insertBefore(cardElem, this.children[0]);
             cardElem.x = 0;
+            cardElem.style.rotate = (Math.random() * 16 - 8) + "deg";
             this.cardElems.push(cardElem);
+            return true
         }
+        return false
     }
 
     get currentCard() { return this.cardElems[0] }
@@ -35,8 +49,7 @@ class KinoDeck extends HTMLElement {
     }
 
     init() {
-        this.loadNextCard();
-        this.emit();
+        this.fillWithCards();
 
         var startX;
         var prevTimestamp;
@@ -126,6 +139,7 @@ class KinoDeck extends HTMLElement {
             if (Math.abs(card.x) > this.offsetWidth / 2 + card.offsetWidth) {
                 this.cardElems.shift();
                 card.remove();
+                this.fillWithCards();
                 if (!this.freeMode) card.data.move(card.x > 0);
                 this.emit();
                 this.applyPhysics = this.easeCenter = false;
@@ -144,12 +158,13 @@ class KinoDeck extends HTMLElement {
         this.keyboardHander = ({ key }) => {
             var card = this.cardElems[0];
             if (!card) return
+            if (card.keyboardMove) return
 
             var up = ["d", "ArrowRight"].includes(key);
             if (up || ["a", "ArrowLeft"].includes(key)) {
                 this.applyPhysics = true;
                 card.speed = card.x = 0;
-                card.acceleration = (up ? 1 : -1) * card.offsetWidth * 10;
+                card.acceleration = (up ? 1 : -1) * card.offsetWidth * 20;
                 card.keyboardMove = true;
             }
 
@@ -267,12 +282,16 @@ class KinoSearch extends HTMLElement {
         this.input.onkeydown = async e => {
             if (e.key == "Enter") {
                 let val = this.input.value.toLowerCase();
-                let word = (await this.api.suggestSearch(val))[this.selectedIndex] ?? this.suggestionList[this.selectedIndex]?.word
-                if (word) this.emitword(word)
-                else {
-                    this.setSuggestions(await this.api.suggest(val))
-                    this.selectedIndex = 0;
-                }
+                if (!val) return
+                window.withLoading(new Promise(async r => {
+                    let word = (await this.api.suggestSearch(val))[this.selectedIndex] ?? this.suggestionList[this.selectedIndex]?.word
+                    if (word) this.emitword(word)
+                    else {
+                        this.setSuggestions(await this.api.suggest(val))
+                        this.selectedIndex = 0;
+                    }
+                    r();
+                }))
                 return
             }
             if (["ArrowUp", "ArrowDown"].includes(e.key)) {

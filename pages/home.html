@@ -22,22 +22,19 @@
 
     done.querySelector("button").onclick = async _ => {
         deck.freeMode = true;
-        let home = await window.session.home(true);
+        let cards = await window.withLoading(window.session.home(true));
         deck.addCards(cards);
-        deck.init();
+        deck.emit();
         done.style.display = "none";
     }
 
     deck.eventHandler = async ({ action, cardsLeft }) => {
-        if (cardsLeft < 2) {
-            var cards = (await window.session.home(deck.freeMode))
-                .filter(card => !deck.cards.find(loadedCard => card == loadedCard));
+        if (cardsLeft < 6) {
+            var cards = (await window.session.home(deck.freeMode));
             deck.addCards(cards);
         }
-        deck.loadNextCard();
         updateProgress();
     }
-    console.log(deck.currentCard);
     updateProgress();
 </script>
 

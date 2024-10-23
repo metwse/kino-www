@@ -11,7 +11,8 @@ window.mouseControl = {
 
 async function withLoading(promise) {
     window.mouseControl.active = false;
-    await promise;
+    let result = await promise;
     window.mouseControl.active = true;
+    return result;
 }
 window.withLoading = withLoading;

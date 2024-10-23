@@ -32,12 +32,20 @@ kino-card {
     border: .125em solid var(--fg-2); border-radius: 1em;
     outline: .5em solid var(--bg-2);
     justify-content: center; align-items: center;
+    transition: opacity .3s;
 
     kino-face {
         font-size: 2em;
         max-width: 100%;
         overflow-wrap: break-word;
     }
+
+    &:nth-of-type(6) { opacity: 1 }
+    &:nth-of-type(5) { opacity: 1 }
+    &:nth-of-type(4) { opacity: .7 }
+    &:nth-of-type(3) { opacity: .4 }
+    &:nth-of-type(2) { opacity: .2 }
+    &:nth-of-type(1) { opacity: 0 }
 }
 
 kino-search {
@@ -73,16 +81,24 @@ kino-search {
     max-width: 480px;
     margin: auto;
     
-    h2 { margin: 0 2em; }
+    h2 { 
+        font-size: 1.5em;
+        text-align: center;
+        margin: .25em 0;
+    }
 
     .meaning {
         display: flex;
         flex-direction: column;
 
-        .type-name { opacity: .5; }
+        .type-name { 
+            margin-top: 1em;
+            opacity: .75;
+            font-size: 1.25em; font-weight: bolder; font-style: italic;
+        }
 
         & > div {
-            background: var(--bg-1);
+            background: var(--bg-3);
             padding: 2em .5em;
 
             b { 

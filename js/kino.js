@@ -246,10 +246,10 @@ class Session {
         }
 
         const LIMITS = {
-            deck: 16,
-            card: 64,
-            face: 192,
-            extension: 8
+            decks: 16,
+            cards: 64,
+            faces: 192,
+            extensions: 8
         };
 
         nextRequest = {};
