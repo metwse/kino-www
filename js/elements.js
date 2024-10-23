@@ -228,7 +228,8 @@ class KinoCard extends HTMLElement {
         for (let elem of Array.from(this.back.children)) {
             elem.style.display = ""
         }
-        this.back.onclick = _ => this.flipToFront()
+        this.back.onclick = _ => window.app.back()
+        window.app.pushState(() => this.flipToFront())
     }
 
     connectedCallback() {

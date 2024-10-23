@@ -7,8 +7,9 @@ const styleExtention = d.createElement("style");
 d.body.append(styleExtention);
 main.attachShadow({ mode: "open" });
 
-var app = {};
-
+var app = { 
+    historyFunctions: {},
+};
 
 // Lazily fetches pages
 var pages = PAGES.map(page => fetch(`/pages/${page}.html`).then(r => r.text()));
@@ -20,6 +21,24 @@ var defaultElementsCss = fetch(`/css/elements.css`).then(r => r.text())
 // Global event listener that clear when new page loads
 var listeners = []
 
+window.onpopstate = e => {
+    if (e.state) e.preventDefault();
+
+    if (app.historyFunctions.back) app.historyFunctions.back()
+    else if (e.state.page) app.page(e.state.page, false);
+    console.log(app.historyFunctions.back)
+
+    app.historyFunctions.back = app.historyFunctions[e.state.back];
+}
+
+app.pushState = (back) => {
+    var functionId = Math.random();
+    app.historyFunctions[functionId] = back;
+    app.historyFunctions.back = back;
+    history.pushState({ back: functionId }, null);
+}
+
+app.back = () => history.back();
 
 // Loads HTML into <main>
 async function parse(pageData) {
@@ -67,8 +86,11 @@ app.addEventListener = (...opt) => {
     window.addEventListener(...opt);
 }
 
-app.page = async name => {
+app.page = async (name, pushState) => {
+    if (pushState !== false) history.pushState({ page: name }, null);
     window.withLoading(parse(pages[PAGES.indexOf(name)]));
 }
+
+history.pushState({ page: "home" }, null)
 
 window.app = app;
