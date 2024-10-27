@@ -4,6 +4,11 @@ class KinoDeck extends HTMLElement {
         this.cards = [];
         this.cardElems = [];
     }
+
+    get currentCard() { return this.cardElems[0] }
+
+    get cardCount() { return this.cards.length + this.cardElems.length }
+
     
     addCards(cards) {
         for (let card of 
@@ -24,10 +29,6 @@ class KinoDeck extends HTMLElement {
         }
     }
 
-    get cardCount() {
-        return this.cards.length + this.cardElems.length
-    }
-
     loadNextCard() {
         let card = this.cards.pop();
         if (card) {
@@ -40,8 +41,6 @@ class KinoDeck extends HTMLElement {
         }
         return false
     }
-
-    get currentCard() { return this.cardElems[0] }
 
     emit(action) {
         if (this.eventHandler)

@@ -15,18 +15,18 @@ var app = {
 var pages = PAGES.map(page => fetch(`/pages/${page}.html`).then(r => r.text()));
 
 // Default CSS for shadow roots.
-var defaultCss = fetch(`/css/default.css`).then(r => r.text())
-var defaultElementsCss = fetch(`/css/elements.css`).then(r => r.text())
+var defaultCss = ["/css/default.css", "/css/elements.css"].map(v => fetch(v).then(r => r.text()));
 
 // Global event listener that clear when new page loads
 var listeners = []
 
+// Back button event listener.
 window.onpopstate = e => {
     if (e.state) e.preventDefault();
+    if (app.lock) return app.pushState(e.state)
 
     if (app.historyFunctions.back) app.historyFunctions.back()
     else if (e.state.page) app.page(e.state.page, false);
-    console.log(app.historyFunctions.back)
 
     app.historyFunctions.back = app.historyFunctions[e.state.back];
 }
@@ -42,6 +42,7 @@ app.back = () => history.back();
 
 // Loads HTML into <main>
 async function parse(pageData) {
+    app.lock = true;
     window.root = document.createElement("div");
     root.innerHTML = pageData;
 
@@ -62,7 +63,7 @@ async function parse(pageData) {
     })
 
     var defaultCssElem = document.createElement("style");
-    defaultCssElem.innerHTML = defaultCss + defaultElementsCss;
+    defaultCssElem.innerHTML = defaultCss.join("\n");
     root.appendChild(defaultCssElem);
 
     // Leak styles from <style global> elements.
@@ -72,13 +73,12 @@ async function parse(pageData) {
     main.shadowRoot.innerHTML = "";
     Array.from(root.childNodes).forEach(c => main.shadowRoot.appendChild(c))
     root = main.shadowRoot
+    app.lock = false;
 }
 
 
 app.init = async _ => {
-    pages = await Promise.all(pages);
-    defaultCss = await defaultCss;
-    defaultElementsCss = await defaultElementsCss;
+    [pages, defaultCss] = await Promise.all([Promise.all(pages), Promise.all(defaultCss)]);
 }
 
 app.addEventListener = (...opt) => {

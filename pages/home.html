@@ -1,6 +1,7 @@
 <script>
     const deck = root.querySelector("kino-deck");
     const done = root.querySelector(".done");
+    const addCards = root.querySelector(".add-cards");
 
     var cards = await window.session.home();
     deck.freeMode = false;
@@ -11,11 +12,14 @@
     const updateProgress = _ => {
         let cardsDone = window.session.cardsDone;
         let totalCards = window.session.cardCount;
+
         root.querySelector(".progress").innerText = `${cardsDone}/${totalCards}`;
         let deckLevel = deck.currentCard?.data?.deck?.level;
         root.querySelector(".deck-name").innerText =
             deckLevel !== undefined ? `deck ${deckLevel + 1}` : "all cards are done";
 
+        if (totalCards == 0)
+            return addCards.style.display = "";
         if (cardsDone == totalCards && !deck.freeMode)
             done.style.display = "";
     }
@@ -48,6 +52,10 @@
         <span>Recurring cards are done.</span>
         <button>practice freely</button>
     </div>
+    <div class="add-cards" style="display: none;">
+        <span>You have not got any card to practice.</span>
+        <button onclick="javascript: app.page('decks')">add cards</button>
+    </div>
 </div>
 
 
@@ -74,7 +82,7 @@
         grid-area: 1 / 1 / 2 / 2
     }
 
-    .done {
+    .main > div {
         display: flex;
         flex-direction: column;
         justify-content: center; align-items: center;
