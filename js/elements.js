@@ -194,7 +194,7 @@ class KinoCard extends HTMLElement {
     load() {
         this.front = document.createElement("kino-face");
         this.front.className = "front";
-        this.sharedData = this.data.front.data;
+        this.sharedData = this.data.front?.data;
         this.front.load(this.data.front);
         this.appendChild(this.front);
         this.back = document.createElement("div")

@@ -64,6 +64,8 @@ class Card extends APIBindings {
 
     init() {
         this.doneAt = new Date(this.doneAt);
+        this.backIds = [...this.back];
+        this.frontId = this.front;
     }
 
     async move(up) {

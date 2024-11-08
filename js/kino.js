@@ -30,7 +30,7 @@ class Session {
         return new Promise(async resolve => {
             await fetch(BACKEND + path, Object.assign(opt ?? {}, {
                 // parse body from json 
-                body: opt?.json ? JSON.stringify(opt.json) : opt?.body,
+                body: opt?.json ? window.JSONbig.stringify(opt.json) : opt?.body,
                 headers: Object.assign(opt?.headers ?? {}, {
                     "Token": this.token,
                     // adds Content-Type: application/json if opt.json is present
@@ -40,8 +40,10 @@ class Session {
             }))
                 .then(async res => {
                     let body = await res.text();
-                    try { body = JSON.parse(body); } 
-                    catch { }
+                    if (body) {
+                        try { body = window.JSONbig.parse(body); }
+                        catch { console.error(`cannot parse response string: ${body}`, res) }
+                    }
                     switch (res.status) {
                         case 401: 
                             this.logout();
@@ -197,7 +199,7 @@ class Session {
         function pushApiResponse() {
             for (let [type, structs] of Object.entries(apiResponse)) {
                 if (!cache[type])
-                    cache[type] = []
+                    cache[type] = {}
                 for (let struct of structs)
                     cache[type][struct.id] = struct
                 if (!response[type])
@@ -220,7 +222,7 @@ class Session {
                         nextRequest[keyType] = new Set();
                     for (let key of keys) {
                         willRequest = true;
-                        nextRequest[keyType].add(+key.split(":")[1]);
+                        nextRequest[keyType].add(BigInt(key.split(":")[1]));
                     }
                 }
             }
